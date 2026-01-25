@@ -403,16 +403,16 @@
 
     <!-- LOGIKA APLIKACIJE -->
     <script>
-        // Provera da li je data.js učitan
+        // Provera podataka
         if (typeof slokas === 'undefined') {
             document.getElementById('main-content').innerHTML = 
                 `<h2 style="color:red; text-align:center; margin-top:50px;">
-                    Greška: data.js nije pronađen!<br>Proveri ime fajla.
+                    Greška: data.js nije pronađen ili ima grešku!
                 </h2>`;
             throw new Error("Data error");
         }
 
-        // --- GLOBALNE PROMENLJIVE ---
+        // --- DOM ELEMENTI ---
         const listContainer = document.getElementById('list-container');
         const searchInput = document.getElementById('search-input');
         const verseDisplay = document.getElementById('verse-display');
@@ -423,23 +423,17 @@
         let currentSearchQuery = "";
         let currentIndex = -1;
         let isFavoritesView = false;
-        let activeChapterName = null; // Za harmoniku
+        let activeChapterName = null;
 
         let favorites = JSON.parse(localStorage.getItem('sb_favorites')) || [];
         const chapters = [...new Set(slokas.map(s => s.chapter))];
 
         // --- POMOĆNE FUNKCIJE ---
-        function normalizeText(text) {
-            if (!text) return "";
-            return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-        }
-
         function cleanText(text) {
             if (!text) return "";
             return text.replace(/\n/g, " ").replace(/\r/g, "");
         }
 
-        // Skraćuje tekst na prve 4 reči
         function getShortTitle(sanskrit) {
             let firstLine = sanskrit.split('\n')[0];
             let words = firstLine.split(' ');
@@ -449,40 +443,54 @@
             return firstLine;
         }
 
-        // PAMETNI REGEX ZA HIGHLIGHT (Krsna = Kṛṣṇa)
-        function createSmartRegex(query) {
+        // ** SUPER-PAMETNI REGEX **
+        // Ova funkcija pravi pravilo: "Nađi reč X, ali samo ako ispred nje NIJE slovo"
+        function createStrictRegex(query) {
+            // Mapa za pametnu pretragu (a nalazi ā, s nalazi ś...)
             const charMap = {
                 'a': '[aā]', 'i': '[iī]', 'u': '[uū]', 'r': '[rṛṝ]',
                 'l': '[lḷ]', 'm': '[mṁ]', 'n': '[nṇṅñ]', 't': '[tṭ]',
                 'd': '[dḍ]', 's': '[sśṣ]', 'h': '[hḥ]'
             };
+
+            // 1. Pretvori upit u "pametni" upit (sa dijakriticima)
             const escapedQuery = query.split('').map(char => {
                 const lower = char.toLowerCase();
+                // Escape specijalnih znakova regexa
+                if (/[.*+?^${}()|[\]\\]/.test(char)) return "\\" + char;
                 return charMap[lower] ? charMap[lower] : char;
             }).join('');
-            return new RegExp(`(${escapedQuery})`, 'gi');
+
+            // 2. Definišemo šta su sve "slova" u Sanskritu i Engleskom
+            // Ovo sprečava da se 'atma' nađe unutar 'paramatma'
+            const allLetters = "a-zA-Zāīūṛṝḷṃṁṇṅñṭḍśṣḥ";
+
+            // (?<![slova]) -> Znači: "Ako ispred onoga što tražimo STOJI slovo, IGNORIŠI GA"
+            // To sprečava 'danger' za 'anger', ali dozvoljava 'angered'
+            return new RegExp(`(?<![${allLetters}])(${escapedQuery})`, 'gi');
         }
 
-        // FUNKCIJA ZA FORMATIRANJE I HIGHLIGHT
+        // --- FUNKCIJA ZA HIGHLIGHT ---
         function highlightText(text, preserveLines = false) {
             if (!text) return "";
             
             let content = text;
 
-            // 1. Ako NIJE sanskrit (nego prevod), spoji sve u jedan red
+            // 1. Ako je prevod, spoji u prozu
             if (!preserveLines) {
                 content = content.replace(/\n/g, " ").replace(/\r/g, "");
             }
 
-            // 2. Ako ima pretrage, markiraj reči
+            // 2. Markiranje
             if (currentSearchQuery && currentSearchQuery.trim().length >= 2) {
                 try {
-                    const regex = createSmartRegex(currentSearchQuery.trim());
+                    const query = currentSearchQuery.trim();
+                    const regex = createStrictRegex(query);
                     content = content.replace(regex, '<span class="highlight">$1</span>');
                 } catch (e) { console.log(e); }
             }
 
-            // 3. Ako JE sanskrit, pretvori \n u <br> da se stihovi lome
+            // 3. Ako je sanskrit, pretvori preostale \n u <br>
             if (preserveLines) {
                 content = content.replace(/\n/g, "<br>");
             }
@@ -518,37 +526,27 @@
             }
         }
 
-        // --- RENDER SIDEBAR: POGLAVLJA (HARMONIKA) ---
+        // --- RENDER SIDEBAR ---
         function renderChapterList() {
             isFavoritesView = false;
             listContainer.innerHTML = `<div class="list-header">CHAPTERS</div>`;
             const mainUl = document.createElement('div');
 
             chapters.forEach(chapter => {
-                // Header poglavlja
                 const chapterHeader = document.createElement('div');
                 chapterHeader.className = 'chapter-header';
                 
                 const isOpen = (chapter === activeChapterName);
                 if (isOpen) chapterHeader.classList.add('active-chapter');
 
-                chapterHeader.innerHTML = `
-                    <span>${chapter}</span>
-                    <span class="arrow-icon">▼</span>
-                `;
+                chapterHeader.innerHTML = `<span>${chapter}</span><span class="arrow-icon">▼</span>`;
 
-                // Klik otvara/zatvara poglavlje
                 chapterHeader.onclick = () => {
-                    if (activeChapterName === chapter) {
-                        activeChapterName = null;
-                    } else {
-                        activeChapterName = chapter;
-                    }
-                    renderChapterList(); // Re-render da se primeni promena
+                    activeChapterName = (activeChapterName === chapter) ? null : chapter;
+                    renderChapterList();
                 };
                 mainUl.appendChild(chapterHeader);
 
-                // Lista stihova (samo ako je otvoreno)
                 if (isOpen) {
                     const subUl = document.createElement('ul');
                     subUl.className = 'verse-sublist show';
@@ -560,12 +558,12 @@
                             if (index === currentIndex) li.classList.add('current-verse');
                             
                             li.innerText = getShortTitle(verse.sanskrit);
-                            li.title = verse.sanskrit; // Tooltip
+                            li.title = verse.sanskrit;
 
                             li.onclick = (e) => {
                                 e.stopPropagation();
                                 displayVerse(index);
-                                renderChapterList(); // Osveži da se oboji aktivni
+                                renderChapterList();
                             };
                             subUl.appendChild(li);
                         }
@@ -576,21 +574,23 @@
             listContainer.appendChild(mainUl);
         }
 
-        // --- RENDER SIDEBAR: REZULTATI PRETRAGE ---
         function renderSearchResults(query) {
             isFavoritesView = false;
-            activeChapterName = null; // Zatvori harmoniku
+            activeChapterName = null;
             listContainer.innerHTML = `<div class="list-header">RESULTS FOR "${query}"</div>`;
             const ul = document.createElement('ul');
-            const normalizedQuery = normalizeText(query);
+
+            let regex;
+            try {
+                regex = createStrictRegex(query);
+            } catch (e) { return; }
 
             const matches = slokas.filter(v => {
-                const normSanskrit = normalizeText(v.sanskrit);
-                const normTrans = normalizeText(v.translation);
-                const normSyn = normalizeText(v.synonyms);
-                return normSanskrit.includes(normalizedQuery) || 
-                       normTrans.includes(normalizedQuery) ||
-                       normSyn.includes(normalizedQuery);
+                // search() vraća poziciju matcha ili -1. 
+                // Pošto koristimo strogi regex, ovo će sada poštovati početak reči.
+                return v.sanskrit.search(regex) !== -1 || 
+                       v.translation.search(regex) !== -1 ||
+                       v.synonyms.search(regex) !== -1;
             });
 
             if (matches.length === 0) {
@@ -612,10 +612,9 @@
             listContainer.appendChild(ul);
         }
 
-        // --- RENDER SIDEBAR: FAVORITI (GRUPISANO) ---
         function renderFavoritesList() {
             isFavoritesView = true;
-            activeChapterName = null; // Resetuj harmoniku
+            activeChapterName = null;
             searchInput.value = "";
             currentSearchQuery = "";
 
@@ -629,8 +628,6 @@
 
             listContainer.innerHTML = `<div class="list-header">★ YOUR FAVORITES</div>`;
             const ul = document.createElement('ul');
-
-            // Sortiraj favorite po redosledu u knjizi
             favorites.sort((a, b) => a - b);
 
             let lastChapter = "";
@@ -659,7 +656,6 @@
             currentIndex = index;
             const verse = slokas[index];
 
-            // Pripremi tekst (sanskrit čuva redove, ostalo je proza)
             const sanskrit = highlightText(verse.sanskrit, true); 
             const synonyms = highlightText(verse.synonyms, false);
             const translation = highlightText(verse.translation, false);
@@ -668,7 +664,10 @@
                 <div class="verse-container">
                     <div id="star-icon" class="star-toggle" onclick="toggleFavorite(${index})">☆</div>
                     <div class="chapter-label">${verse.chapter}</div>
-                    <div class="sanskrit-text">${sanskrit}</div>
+                    
+                    <!-- Ovde menjamo stil inline da smanjimo font za strofe -->
+                    <div class="sanskrit-text" style="font-size: 1.25em;">${sanskrit}</div>
+                    
                     <div class="ref-text">${verse.ref}</div>
                     <span class="label">Synonyms:</span>
                     <div class="synonyms-text">${synonyms}</div>
@@ -681,7 +680,6 @@
             prevBtn.disabled = index === 0;
             nextBtn.disabled = index === slokas.length - 1;
             
-            // Skrol na vrh
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
@@ -690,7 +688,7 @@
             currentSearchQuery = e.target.value;
             if (currentSearchQuery.trim() === "") {
                 renderChapterList();
-                displayVerse(currentIndex); // Refresh za highlight
+                displayVerse(currentIndex);
             } else {
                 renderSearchResults(currentSearchQuery);
             }
@@ -699,7 +697,7 @@
         prevBtn.addEventListener('click', () => displayVerse(currentIndex - 1));
         nextBtn.addEventListener('click', () => displayVerse(currentIndex + 1));
 
-        // --- INICIJALIZACIJA ---
+        // --- START ---
         renderChapterList();
         displayVerse(0);
 
