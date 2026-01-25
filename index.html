@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ślokāmṛta Bindhu - Digital Edition</title>
+    <style>
+        /* --- OSNOVNI DIZAJN --- */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+            background-color: #f0f2f5;
+            color: #333;
+            overflow: hidden;
+        }
+
+        /* --- LEVA STRANA (SIDEBAR) --- */
+        #sidebar {
+            width: 350px;
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #ccc;
+            flex-shrink: 0;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+
+        #search-container {
+            padding: 20px;
+            background-color: #1a252f;
+            border-bottom: 1px solid #34495e;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        #search-container h3 {
+            margin: 0;
+            color: #fff;
+            font-weight: 400;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+
+        #search-input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            border: none;
+            box-sizing: border-box;
+            font-size: 16px;
+            background: #ecf0f1;
+            color: #2c3e50;
+            outline: none;
+        }
+
+        /* Dugmići u sidebaru */
+        .sidebar-tools {
+            display: flex;
+            gap: 5px;
+        }
+
+        .tool-btn {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.9em;
+            transition: background 0.2s;
+        }
+
+        .btn-chapters { background: #34495e; color: #ecf0f1; }
+        .btn-chapters:hover { background: #46637f; }
+
+        .btn-favorites { background: #f1c40f; color: #2c3e50; }
+        .btn-favorites:hover { background: #f39c12; }
+
+        /* LISTA POGLAVLJA I REZULTATA */
+        #list-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 0;
+            margin: 0;
+        }
+
+        .list-header {
+            padding: 15px 20px;
+            background: #34495e;
+            color: #bdc3c7;
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: bold;
+            border-bottom: 1px solid #2c3e50;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        ul { list-style: none; padding: 0; margin: 0; }
+
+        /* STIL POGLAVLJA */
+        .chapter-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #34495e;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+            color: #fff;
+        }
+        .chapter-item:hover {
+            background-color: #3e5871;
+            padding-left: 25px;
+            color: #f1c40f;
+        }
+
+        /* STIL REZULTATA I FAVORITA */
+        .result-item {
+            padding: 12px 20px;
+            border-bottom: 1px solid #34495e;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .result-item:hover { background-color: #2980b9; }
+
+        .res-highlight {
+            color: #f1c40f;
+            font-size: 0.85em;
+            font-weight: bold;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .res-preview {
+            font-size: 0.9em;
+            color: #ecf0f1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-style: italic;
+            opacity: 0.8;
+        }
+
+        /* GRUPE FAVORITA */
+        .fav-group-header {
+            background: #273746;
+            color: #95a5a6;
+            padding: 8px 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-transform: uppercase;
+            border-bottom: 1px solid #34495e;
+        }
+
+        /* --- CENTRALNI DEO (MAIN CONTENT) --- */
+        #main-content {
+            flex-grow: 1;
+            padding: 40px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-image: linear-gradient(to bottom, #ffffff, #f0f2f5);
+        }
+
+        .verse-container {
+            max-width: 800px;
+            width: 100%;
+            background: white;
+            padding: 50px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            margin-bottom: 30px;
+            border-top: 5px solid #8e44ad;
+            position: relative; /* Za pozicioniranje zvezdice */
+        }
+
+        /* HIGHLIGHT STIL (Žuto markiranje) */
+        .highlight {
+            background-color: #f1c40f;
+            color: #000;
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+
+        /* ZVEZDICA ZA FAVORITE */
+        .star-toggle {
+            position: absolute;
+            top: 20px;
+            right: 25px;
+            font-size: 2em;
+            cursor: pointer;
+            color: #ccc; /* Siva kad nije favorit */
+            transition: color 0.2s, transform 0.2s;
+            user-select: none;
+        }
+        .star-toggle:hover { transform: scale(1.1); }
+        .star-toggle.active { color: #f1c40f; /* Zlatna kad je favorit */ }
+
+        /* DIZAJN STIHA */
+        .chapter-label {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 30px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .sanskrit-text {
+            font-family: 'Georgia', serif;
+            font-size: 1.3em;
+            color: #2c3e50;
+            text-align: center;
+            white-space: pre-wrap;
+            line-height: 1.6;
+            margin: 0 0 20px 0;
+            font-style: italic;
+        }
+
+        .ref-text {
+            text-align: right;
+            font-style: normal;
+            color: #7f8c8d;
+            margin-bottom: 40px;
+            font-size: 0.95em;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+        }
+
+        .label {
+            font-weight: bold;
+            color: #8e44ad;
+            font-size: 0.9em;
+            margin-top: 20px;
+            display: block;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .synonyms-text {
+            font-size: 1em;
+            color: #444;
+            line-height: 1.7;
+            text-align: justify;
+            background: #fcfcfc;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #eee;
+            margin-bottom: 15px;
+        }
+
+        .translation-text {
+            font-size: 1.2em;
+            color: #2c3e50;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        /* NAVIGACIJA DUGMIĆI */
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 800px;
+            padding-bottom: 50px;
+        }
+
+        .nav-btn {
+            padding: 12px 30px;
+            background-color: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .nav-btn:hover {
+            background-color: #34495e;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+        }
+
+        .nav-btn:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #2c3e50; }
+        ::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #777; }
+
+        /* Media Query za mobilne */
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            #sidebar { width: 100%; height: 300px; }
+            #main-content { padding: 20px; }
+            .verse-container { padding: 20px; }
+            .sanskrit-text { font-size: 1.2em; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- SIDEBAR -->
+    <div id="sidebar">
+        <div id="search-container">
+            <h3>Ślokāmṛta Bindu</h3>
+            <input type="text" id="search-input" placeholder="Search text or sanskrit...">
+            <div class="sidebar-tools">
+                <button class="tool-btn btn-chapters" onclick="renderChapterList()">Show Chapters</button>
+                <button class="tool-btn btn-favorites" onclick="renderFavoritesList()">★ Favorites</button>
+            </div>
+        </div>
+        <div id="list-container">
+            <!-- JS ubacuje listu ovde -->
+        </div>
+    </div>
+
+    <!-- GLAVNI PROZOR -->
+    <div id="main-content">
+        <div id="verse-display"></div>
+        
+        <div class="nav-buttons" id="nav-buttons" style="display:none;">
+            <button class="nav-btn" id="prev-btn">← Previous</button>
+            <button class="nav-btn" id="next-btn">Next →</button>
+        </div>
+    </div>
+
+    <!-- UČITAVANJE PODATAKA -->
+    <script src="data.js"></script>
+
+           <script>
+        // Provera podataka
+        if (typeof slokas === 'undefined') {
+            document.getElementById('main-content').innerHTML = 
+                `<h2 style="color:red; text-align:center; margin-top:50px;">
+                    Greška: data.js nije pronađen ili ima grešku!
+                </h2>`;
+            throw new Error("Data error");
+        }
+
+        // --- DOM ELEMENTI ---
+        const listContainer = document.getElementById('list-container');
+        const searchInput = document.getElementById('search-input');
+        const verseDisplay = document.getElementById('verse-display');
+        const navButtons = document.getElementById('nav-buttons');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+
+        let currentSearchQuery = "";
+        let currentIndex = -1;
+        let isFavoritesView = false;
+
+        let favorites = JSON.parse(localStorage.getItem('sb_favorites')) || [];
+        const chapters = [...new Set(slokas.map(s => s.chapter))];
+
+        // --- POMOĆNE FUNKCIJE ---
+        
+        function normalizeText(text) {
+            if (!text) return "";
+            return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        }
+
+        function cleanText(text) {
+            if (!text) return "";
+            return text.replace(/\n/g, " ").replace(/\r/g, "");
+        }
+
+        // ** PAMETNA FUNKCIJA ZA PRAVLJENJE REGEX-A **
+        // Pretvara "krsna" u "(k|k[ṛ])(r|r[ṛṝ])(s|s[śṣ])(n|n[ṇṅñ])(a|a[ā])"
+        // Tako da highlight radi čak i ako kucaš obična slova
+        function createSmartRegex(query) {
+            const charMap = {
+                'a': '[aā]', 'i': '[iī]', 'u': '[uū]', 'r': '[rṛṝ]',
+                'l': '[lḷ]', 'm': '[mṁ]', 'n': '[nṇṅñ]', 't': '[tṭ]',
+                'd': '[dḍ]', 's': '[sśṣ]', 'h': '[hḥ]'
+            };
+
+            const escapedQuery = query.split('').map(char => {
+                const lower = char.toLowerCase();
+                // Ako je slovo u mapi, vrati regex grupu, inače samo slovo
+                return charMap[lower] ? charMap[lower] : char;
+            }).join('');
+
+            return new RegExp(`(${escapedQuery})`, 'gi');
+        }
+
+        // ** FUNKCIJA ZA HIGHLIGHT I FORMATIRANJE **
+        function highlightText(text, preserveLines = false) {
+            if (!text) return "";
+            
+            let content = text;
+
+            // 1. Ako je prevod, obriši entere odmah (da bude proza)
+            if (!preserveLines) {
+                content = content.replace(/\n/g, " ").replace(/\r/g, "");
+            }
+
+            // 2. Primeni highlight ako ima pretrage
+            if (currentSearchQuery && currentSearchQuery.trim().length >= 2) {
+                try {
+                    const regex = createSmartRegex(currentSearchQuery.trim());
+                    content = content.replace(regex, '<span class="highlight">$1</span>');
+                } catch (e) {
+                    // Ako regex pukne (npr specijalni karakteri), ignoriši
+                    console.log("Regex error", e);
+                }
+            }
+
+            // 3. Ako je sanskrit, pretvori preostale \n u <br> da sačuvaš strofe
+            if (preserveLines) {
+                content = content.replace(/\n/g, "<br>");
+            }
+
+            return content;
+        }
+
+        // --- LOGIKA ZA FAVORITE ---
+        function toggleFavorite(index) {
+            const pos = favorites.indexOf(index);
+            if (pos === -1) {
+                favorites.push(index);
+            } else {
+                favorites.splice(pos, 1);
+            }
+            localStorage.setItem('sb_favorites', JSON.stringify(favorites));
+            updateStarIcon(index);
+
+            if (isFavoritesView) {
+                renderFavoritesList();
+            }
+        }
+
+        function updateStarIcon(index) {
+            const starEl = document.getElementById('star-icon');
+            if (!starEl) return;
+
+            if (favorites.includes(index)) {
+                starEl.innerText = "★";
+                starEl.classList.add("active");
+                starEl.title = "Remove from Favorites";
+            } else {
+                starEl.innerText = "☆";
+                starEl.classList.remove("active");
+                starEl.title = "Add to Favorites";
+            }
+        }
+
+        // --- RENDER SIDEBAR ---
+        function renderChapterList() {
+            isFavoritesView = false;
+            listContainer.innerHTML = `<div class="list-header">CHAPTERS</div>`;
+            const ul = document.createElement('ul');
+            
+            chapters.forEach(chapter => {
+                const li = document.createElement('li');
+                li.className = 'chapter-item';
+                li.innerText = chapter;
+                li.onclick = () => {
+                    const index = slokas.findIndex(s => s.chapter === chapter);
+                    displayVerse(index);
+                };
+                ul.appendChild(li);
+            });
+            listContainer.appendChild(ul);
+        }
+
+        function renderSearchResults(query) {
+            isFavoritesView = false;
+            listContainer.innerHTML = `<div class="list-header">RESULTS FOR "${query}"</div>`;
+            const ul = document.createElement('ul');
+            const normalizedQuery = normalizeText(query);
+
+            const matches = slokas.filter(v => {
+                const normSanskrit = normalizeText(v.sanskrit);
+                const normTrans = normalizeText(v.translation);
+                const normSyn = normalizeText(v.synonyms);
+                return normSanskrit.includes(normalizedQuery) || 
+                       normTrans.includes(normalizedQuery) ||
+                       normSyn.includes(normalizedQuery);
+            });
+
+            if (matches.length === 0) {
+                listContainer.innerHTML += `<div style="padding:20px; color:#bdc3c7; text-align:center;">No results found.</div>`;
+                return;
+            }
+
+            matches.forEach(match => {
+                const li = document.createElement('li');
+                li.className = 'result-item';
+                const originalIndex = slokas.indexOf(match);
+
+                li.innerHTML = `
+                    <span class="res-highlight">${match.chapter}</span>
+                    <div class="res-preview">${match.sanskrit.split('\n')[0]}</div>
+                `;
+                li.onclick = () => displayVerse(originalIndex);
+                ul.appendChild(li);
+            });
+            listContainer.appendChild(ul);
+        }
+
+        function renderFavoritesList() {
+            isFavoritesView = true;
+            searchInput.value = "";
+            currentSearchQuery = "";
+
+            if (favorites.length === 0) {
+                listContainer.innerHTML = `<div class="list-header">FAVORITES</div>
+                    <div style="padding:20px; color:#bdc3c7; text-align:center;">
+                        No favorites yet.<br>Click the ☆ on a verse to save it.
+                    </div>`;
+                return;
+            }
+
+            listContainer.innerHTML = `<div class="list-header">★ YOUR FAVORITES</div>`;
+            const ul = document.createElement('ul');
+
+            favorites.sort((a, b) => a - b);
+            let lastChapter = "";
+
+            favorites.forEach(idx => {
+                const verse = slokas[idx];
+                if (verse.chapter !== lastChapter) {
+                    const groupHeader = document.createElement('div');
+                    groupHeader.className = 'fav-group-header';
+                    groupHeader.innerText = verse.chapter;
+                    ul.appendChild(groupHeader);
+                    lastChapter = verse.chapter;
+                }
+                const li = document.createElement('li');
+                li.className = 'result-item';
+                li.innerHTML = `<div class="res-preview" style="font-size:1em;">${verse.sanskrit.split('\n')[0]}</div>`;
+                li.onclick = () => displayVerse(idx);
+                ul.appendChild(li);
+            });
+            listContainer.appendChild(ul);
+        }
+
+        // --- PRIKAZ STIHA (GLAVNI) ---
+        function displayVerse(index) {
+            if (index < 0 || index >= slokas.length) return;
+            
+            currentIndex = index;
+            const verse = slokas[index];
+
+            // 1. Sanskrit: True (čuvamo redove)
+            const sanskrit = highlightText(verse.sanskrit, true); 
+            
+            // 2. Ostalo: False (pravimo prozu)
+            const synonyms = highlightText(verse.synonyms, false);
+            const translation = highlightText(verse.translation, false);
+
+            verseDisplay.innerHTML = `
+                <div class="verse-container">
+                    <div id="star-icon" class="star-toggle" onclick="toggleFavorite(${index})">☆</div>
+
+                    <div class="chapter-label">${verse.chapter}</div>
+                    
+                    <div class="sanskrit-text">${sanskrit}</div>
+                    
+                    <div class="ref-text">${verse.ref}</div>
+                    
+                    <span class="label">Synonyms:</span>
+                    <div class="synonyms-text">${synonyms}</div>
+                    
+                    <span class="label">Translation:</span>
+                    <div class="translation-text">${translation}</div>
+                </div>
+            `;
+
+            updateStarIcon(index);
+
+            navButtons.style.display = 'flex';
+            prevBtn.disabled = index === 0;
+            nextBtn.disabled = index === slokas.length - 1;
+            
+            // Scroll na vrh
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // --- EVENT LISTENERI ---
+        searchInput.addEventListener('input', (e) => {
+            currentSearchQuery = e.target.value;
+            if (currentSearchQuery.trim() === "") {
+                renderChapterList();
+                displayVerse(currentIndex); // Da skloni highlight ako se briše pretraga
+            } else {
+                renderSearchResults(currentSearchQuery);
+            }
+        });
+
+        prevBtn.addEventListener('click', () => displayVerse(currentIndex - 1));
+        nextBtn.addEventListener('click', () => displayVerse(currentIndex + 1));
+
+        // --- START ---
+        renderChapterList();
+        displayVerse(0);
+
+    </script>
+</body>
+</html>
