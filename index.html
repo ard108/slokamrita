@@ -14,7 +14,7 @@
             height: 100vh;
             background-color: #f0f2f5;
             color: #333;
-            overflow: hidden;
+            overflow: hidden; /* Sprečava dupli skrol na celoj strani */
         }
 
         /* --- LEVA STRANA (SIDEBAR) --- */
@@ -103,24 +103,78 @@
             z-index: 10;
         }
 
-        ul { list-style: none; padding: 0; margin: 0; }
-
-        /* STIL POGLAVLJA */
-        .chapter-item {
+        /* --- STILOVI ZA HARMONIKA MENI (ACCORDION) --- */
+        .chapter-header {
             padding: 15px 20px;
             border-bottom: 1px solid #34495e;
             cursor: pointer;
-            transition: all 0.2s;
-            font-weight: 500;
-            color: #fff;
+            font-weight: 600;
+            color: #ecf0f1;
+            background-color: #2c3e50;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s;
         }
-        .chapter-item:hover {
+
+        .chapter-header:hover {
             background-color: #3e5871;
-            padding-left: 25px;
             color: #f1c40f;
         }
 
-        /* STIL REZULTATA I FAVORITA */
+        .chapter-header.active-chapter {
+            background-color: #1a252f;
+            color: #f1c40f;
+            border-left: 4px solid #f1c40f;
+        }
+
+        .arrow-icon {
+            font-size: 0.8em;
+            transition: transform 0.3s;
+        }
+        
+        .active-chapter .arrow-icon {
+            transform: rotate(180deg);
+        }
+
+        /* Lista stihova unutar poglavlja (podmeni) */
+        .verse-sublist {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            background-color: #263544; /* Tamnija od sidebara */
+            display: block; /* Prikazuje se kad je kreirano */
+        }
+
+        /* Pojedinačni stih u podmeniju */
+        .sub-verse-item {
+            padding: 8px 15px 8px 35px; /* Uvučeno */
+            font-size: 0.85em; /* Manja slova */
+            color: #bdc3c7;
+            cursor: pointer;
+            border-bottom: 1px solid #2f4050;
+            transition: all 0.2s;
+            font-family: 'Segoe UI', sans-serif;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .sub-verse-item:hover {
+            color: #fff;
+            background-color: #3e5871;
+            padding-left: 40px;
+        }
+
+        /* Aktivni stih (onaj koji se trenutno čita) */
+        .sub-verse-item.current-verse {
+            color: #f1c40f;
+            background-color: #2c3e50;
+            font-weight: bold;
+            border-left: 3px solid #f1c40f;
+        }
+
+        /* STIL REZULTATA PRETRAGE */
         .result-item {
             padding: 12px 20px;
             border-bottom: 1px solid #34495e;
@@ -146,15 +200,16 @@
             opacity: 0.8;
         }
 
-        /* GRUPE FAVORITA */
+        /* HEADER ZA GRUPE FAVORITA */
         .fav-group-header {
-            background: #273746;
+            background: #1a252f;
             color: #95a5a6;
             padding: 8px 20px;
             font-size: 0.8em;
             font-weight: bold;
             text-transform: uppercase;
             border-bottom: 1px solid #34495e;
+            letter-spacing: 1px;
         }
 
         /* --- CENTRALNI DEO (MAIN CONTENT) --- */
@@ -177,10 +232,10 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.08);
             margin-bottom: 30px;
             border-top: 5px solid #8e44ad;
-            position: relative; /* Za pozicioniranje zvezdice */
+            position: relative;
         }
 
-        /* HIGHLIGHT STIL (Žuto markiranje) */
+        /* HIGHLIGHT STIL (Žuto markiranje u tekstu) */
         .highlight {
             background-color: #f1c40f;
             color: #000;
@@ -195,12 +250,12 @@
             right: 25px;
             font-size: 2em;
             cursor: pointer;
-            color: #ccc; /* Siva kad nije favorit */
+            color: #ccc;
             transition: color 0.2s, transform 0.2s;
             user-select: none;
         }
         .star-toggle:hover { transform: scale(1.1); }
-        .star-toggle.active { color: #f1c40f; /* Zlatna kad je favorit */ }
+        .star-toggle.active { color: #f1c40f; }
 
         /* DIZAJN STIHA */
         .chapter-label {
@@ -216,10 +271,10 @@
 
         .sanskrit-text {
             font-family: 'Georgia', serif;
-            font-size: 1.3em;
+            font-size: 1.3em; /* Smanjeno kako si tražio */
             color: #2c3e50;
             text-align: center;
-            white-space: pre-wrap;
+            white-space: pre-wrap; /* Ovo čuva nove redove */
             line-height: 1.6;
             margin: 0 0 20px 0;
             font-style: italic;
@@ -309,7 +364,7 @@
         /* Media Query za mobilne */
         @media (max-width: 768px) {
             body { flex-direction: column; }
-            #sidebar { width: 100%; height: 300px; }
+            #sidebar { width: 100%; height: 350px; }
             #main-content { padding: 20px; }
             .verse-container { padding: 20px; }
             .sanskrit-text { font-size: 1.2em; }
@@ -321,7 +376,7 @@
     <!-- SIDEBAR -->
     <div id="sidebar">
         <div id="search-container">
-            <h3>Ślokāmṛta Bindu</h3>
+            <h3>Ślokāmṛta Bindhu</h3>
             <input type="text" id="search-input" placeholder="Search text or sanskrit...">
             <div class="sidebar-tools">
                 <button class="tool-btn btn-chapters" onclick="renderChapterList()">Show Chapters</button>
@@ -346,17 +401,18 @@
     <!-- UČITAVANJE PODATAKA -->
     <script src="data.js"></script>
 
-           <script>
-        // Provera podataka
+    <!-- LOGIKA APLIKACIJE -->
+    <script>
+        // Provera da li je data.js učitan
         if (typeof slokas === 'undefined') {
             document.getElementById('main-content').innerHTML = 
                 `<h2 style="color:red; text-align:center; margin-top:50px;">
-                    Greška: data.js nije pronađen ili ima grešku!
+                    Greška: data.js nije pronađen!<br>Proveri ime fajla.
                 </h2>`;
             throw new Error("Data error");
         }
 
-        // --- DOM ELEMENTI ---
+        // --- GLOBALNE PROMENLJIVE ---
         const listContainer = document.getElementById('list-container');
         const searchInput = document.getElementById('search-input');
         const verseDisplay = document.getElementById('verse-display');
@@ -367,12 +423,12 @@
         let currentSearchQuery = "";
         let currentIndex = -1;
         let isFavoritesView = false;
+        let activeChapterName = null; // Za harmoniku
 
         let favorites = JSON.parse(localStorage.getItem('sb_favorites')) || [];
         const chapters = [...new Set(slokas.map(s => s.chapter))];
 
         // --- POMOĆNE FUNKCIJE ---
-        
         function normalizeText(text) {
             if (!text) return "";
             return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -383,48 +439,50 @@
             return text.replace(/\n/g, " ").replace(/\r/g, "");
         }
 
-        // ** PAMETNA FUNKCIJA ZA PRAVLJENJE REGEX-A **
-        // Pretvara "krsna" u "(k|k[ṛ])(r|r[ṛṝ])(s|s[śṣ])(n|n[ṇṅñ])(a|a[ā])"
-        // Tako da highlight radi čak i ako kucaš obična slova
+        // Skraćuje tekst na prve 4 reči
+        function getShortTitle(sanskrit) {
+            let firstLine = sanskrit.split('\n')[0];
+            let words = firstLine.split(' ');
+            if(words.length > 4) {
+                return words.slice(0, 4).join(' ') + "...";
+            }
+            return firstLine;
+        }
+
+        // PAMETNI REGEX ZA HIGHLIGHT (Krsna = Kṛṣṇa)
         function createSmartRegex(query) {
             const charMap = {
                 'a': '[aā]', 'i': '[iī]', 'u': '[uū]', 'r': '[rṛṝ]',
                 'l': '[lḷ]', 'm': '[mṁ]', 'n': '[nṇṅñ]', 't': '[tṭ]',
                 'd': '[dḍ]', 's': '[sśṣ]', 'h': '[hḥ]'
             };
-
             const escapedQuery = query.split('').map(char => {
                 const lower = char.toLowerCase();
-                // Ako je slovo u mapi, vrati regex grupu, inače samo slovo
                 return charMap[lower] ? charMap[lower] : char;
             }).join('');
-
             return new RegExp(`(${escapedQuery})`, 'gi');
         }
 
-        // ** FUNKCIJA ZA HIGHLIGHT I FORMATIRANJE **
+        // FUNKCIJA ZA FORMATIRANJE I HIGHLIGHT
         function highlightText(text, preserveLines = false) {
             if (!text) return "";
             
             let content = text;
 
-            // 1. Ako je prevod, obriši entere odmah (da bude proza)
+            // 1. Ako NIJE sanskrit (nego prevod), spoji sve u jedan red
             if (!preserveLines) {
                 content = content.replace(/\n/g, " ").replace(/\r/g, "");
             }
 
-            // 2. Primeni highlight ako ima pretrage
+            // 2. Ako ima pretrage, markiraj reči
             if (currentSearchQuery && currentSearchQuery.trim().length >= 2) {
                 try {
                     const regex = createSmartRegex(currentSearchQuery.trim());
                     content = content.replace(regex, '<span class="highlight">$1</span>');
-                } catch (e) {
-                    // Ako regex pukne (npr specijalni karakteri), ignoriši
-                    console.log("Regex error", e);
-                }
+                } catch (e) { console.log(e); }
             }
 
-            // 3. Ako je sanskrit, pretvori preostale \n u <br> da sačuvaš strofe
+            // 3. Ako JE sanskrit, pretvori \n u <br> da se stihovi lome
             if (preserveLines) {
                 content = content.replace(/\n/g, "<br>");
             }
@@ -451,39 +509,77 @@
         function updateStarIcon(index) {
             const starEl = document.getElementById('star-icon');
             if (!starEl) return;
-
             if (favorites.includes(index)) {
                 starEl.innerText = "★";
                 starEl.classList.add("active");
-                starEl.title = "Remove from Favorites";
             } else {
                 starEl.innerText = "☆";
                 starEl.classList.remove("active");
-                starEl.title = "Add to Favorites";
             }
         }
 
-        // --- RENDER SIDEBAR ---
+        // --- RENDER SIDEBAR: POGLAVLJA (HARMONIKA) ---
         function renderChapterList() {
             isFavoritesView = false;
             listContainer.innerHTML = `<div class="list-header">CHAPTERS</div>`;
-            const ul = document.createElement('ul');
-            
+            const mainUl = document.createElement('div');
+
             chapters.forEach(chapter => {
-                const li = document.createElement('li');
-                li.className = 'chapter-item';
-                li.innerText = chapter;
-                li.onclick = () => {
-                    const index = slokas.findIndex(s => s.chapter === chapter);
-                    displayVerse(index);
+                // Header poglavlja
+                const chapterHeader = document.createElement('div');
+                chapterHeader.className = 'chapter-header';
+                
+                const isOpen = (chapter === activeChapterName);
+                if (isOpen) chapterHeader.classList.add('active-chapter');
+
+                chapterHeader.innerHTML = `
+                    <span>${chapter}</span>
+                    <span class="arrow-icon">▼</span>
+                `;
+
+                // Klik otvara/zatvara poglavlje
+                chapterHeader.onclick = () => {
+                    if (activeChapterName === chapter) {
+                        activeChapterName = null;
+                    } else {
+                        activeChapterName = chapter;
+                    }
+                    renderChapterList(); // Re-render da se primeni promena
                 };
-                ul.appendChild(li);
+                mainUl.appendChild(chapterHeader);
+
+                // Lista stihova (samo ako je otvoreno)
+                if (isOpen) {
+                    const subUl = document.createElement('ul');
+                    subUl.className = 'verse-sublist show';
+
+                    slokas.forEach((verse, index) => {
+                        if (verse.chapter === chapter) {
+                            const li = document.createElement('li');
+                            li.className = 'sub-verse-item';
+                            if (index === currentIndex) li.classList.add('current-verse');
+                            
+                            li.innerText = getShortTitle(verse.sanskrit);
+                            li.title = verse.sanskrit; // Tooltip
+
+                            li.onclick = (e) => {
+                                e.stopPropagation();
+                                displayVerse(index);
+                                renderChapterList(); // Osveži da se oboji aktivni
+                            };
+                            subUl.appendChild(li);
+                        }
+                    });
+                    mainUl.appendChild(subUl);
+                }
             });
-            listContainer.appendChild(ul);
+            listContainer.appendChild(mainUl);
         }
 
+        // --- RENDER SIDEBAR: REZULTATI PRETRAGE ---
         function renderSearchResults(query) {
             isFavoritesView = false;
+            activeChapterName = null; // Zatvori harmoniku
             listContainer.innerHTML = `<div class="list-header">RESULTS FOR "${query}"</div>`;
             const ul = document.createElement('ul');
             const normalizedQuery = normalizeText(query);
@@ -506,7 +602,6 @@
                 const li = document.createElement('li');
                 li.className = 'result-item';
                 const originalIndex = slokas.indexOf(match);
-
                 li.innerHTML = `
                     <span class="res-highlight">${match.chapter}</span>
                     <div class="res-preview">${match.sanskrit.split('\n')[0]}</div>
@@ -517,8 +612,10 @@
             listContainer.appendChild(ul);
         }
 
+        // --- RENDER SIDEBAR: FAVORITI (GRUPISANO) ---
         function renderFavoritesList() {
             isFavoritesView = true;
+            activeChapterName = null; // Resetuj harmoniku
             searchInput.value = "";
             currentSearchQuery = "";
 
@@ -533,9 +630,10 @@
             listContainer.innerHTML = `<div class="list-header">★ YOUR FAVORITES</div>`;
             const ul = document.createElement('ul');
 
+            // Sortiraj favorite po redosledu u knjizi
             favorites.sort((a, b) => a - b);
-            let lastChapter = "";
 
+            let lastChapter = "";
             favorites.forEach(idx => {
                 const verse = slokas[idx];
                 if (verse.chapter !== lastChapter) {
@@ -547,61 +645,52 @@
                 }
                 const li = document.createElement('li');
                 li.className = 'result-item';
-                li.innerHTML = `<div class="res-preview" style="font-size:1em;">${verse.sanskrit.split('\n')[0]}</div>`;
+                li.innerHTML = `<div class="res-preview" style="font-size:1em; color:#fff;">${verse.sanskrit.split('\n')[0]}</div>`;
                 li.onclick = () => displayVerse(idx);
                 ul.appendChild(li);
             });
             listContainer.appendChild(ul);
         }
 
-        // --- PRIKAZ STIHA (GLAVNI) ---
+        // --- PRIKAZ GLAVNOG PROZORA ---
         function displayVerse(index) {
             if (index < 0 || index >= slokas.length) return;
             
             currentIndex = index;
             const verse = slokas[index];
 
-            // 1. Sanskrit: True (čuvamo redove)
+            // Pripremi tekst (sanskrit čuva redove, ostalo je proza)
             const sanskrit = highlightText(verse.sanskrit, true); 
-            
-            // 2. Ostalo: False (pravimo prozu)
             const synonyms = highlightText(verse.synonyms, false);
             const translation = highlightText(verse.translation, false);
 
             verseDisplay.innerHTML = `
                 <div class="verse-container">
                     <div id="star-icon" class="star-toggle" onclick="toggleFavorite(${index})">☆</div>
-
                     <div class="chapter-label">${verse.chapter}</div>
-                    
                     <div class="sanskrit-text">${sanskrit}</div>
-                    
                     <div class="ref-text">${verse.ref}</div>
-                    
                     <span class="label">Synonyms:</span>
                     <div class="synonyms-text">${synonyms}</div>
-                    
                     <span class="label">Translation:</span>
                     <div class="translation-text">${translation}</div>
                 </div>
             `;
-
             updateStarIcon(index);
-
             navButtons.style.display = 'flex';
             prevBtn.disabled = index === 0;
             nextBtn.disabled = index === slokas.length - 1;
             
-            // Scroll na vrh
+            // Skrol na vrh
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // --- EVENT LISTENERI ---
+        // --- EVENT LISTENERS ---
         searchInput.addEventListener('input', (e) => {
             currentSearchQuery = e.target.value;
             if (currentSearchQuery.trim() === "") {
                 renderChapterList();
-                displayVerse(currentIndex); // Da skloni highlight ako se briše pretraga
+                displayVerse(currentIndex); // Refresh za highlight
             } else {
                 renderSearchResults(currentSearchQuery);
             }
@@ -610,7 +699,7 @@
         prevBtn.addEventListener('click', () => displayVerse(currentIndex - 1));
         nextBtn.addEventListener('click', () => displayVerse(currentIndex + 1));
 
-        // --- START ---
+        // --- INICIJALIZACIJA ---
         renderChapterList();
         displayVerse(0);
 
