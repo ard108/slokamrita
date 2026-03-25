@@ -14,7 +14,38 @@
             height: 100vh;
             background-color: #f0f2f5;
             color: #333;
-            overflow: hidden; /* Sprečava dupli skrol na celoj strani */
+            overflow: hidden;
+        }
+
+        /* --- DUGME ZA MENI (HAMBURGER) I OVERLAY (Zatamnjenje) --- */
+        /* Sakriveno na desktopu, prikazuje se samo na mobilnom */
+        #menu-toggle {
+            display: none; 
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 95;
+            background-color: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 15px;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 90;
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
 
         /* --- LEVA STRANA (SIDEBAR) --- */
@@ -27,6 +58,7 @@
             border-right: 1px solid #ccc;
             flex-shrink: 0;
             box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease; /* Glatka animacija ulaska/izlaska */
         }
 
         #search-container {
@@ -58,7 +90,6 @@
             outline: none;
         }
 
-        /* Dugmići u sidebaru */
         .sidebar-tools {
             display: flex;
             gap: 5px;
@@ -103,7 +134,6 @@
             z-index: 10;
         }
 
-        /* --- STILOVI ZA HARMONIKA MENI (ACCORDION) --- */
         .chapter-header {
             padding: 15px 20px;
             border-bottom: 1px solid #34495e;
@@ -137,19 +167,17 @@
             transform: rotate(180deg);
         }
 
-        /* Lista stihova unutar poglavlja (podmeni) */
         .verse-sublist {
             list-style: none;
             padding: 0;
             margin: 0;
-            background-color: #263544; /* Tamnija od sidebara */
-            display: block; /* Prikazuje se kad je kreirano */
+            background-color: #263544;
+            display: block;
         }
 
-        /* Pojedinačni stih u podmeniju */
         .sub-verse-item {
-            padding: 8px 15px 8px 35px; /* Uvučeno */
-            font-size: 0.85em; /* Manja slova */
+            padding: 12px 15px 12px 35px; /* Malo veći padding zbog lakšeg klika na telefonu */
+            font-size: 0.9em;
             color: #bdc3c7;
             cursor: pointer;
             border-bottom: 1px solid #2f4050;
@@ -166,7 +194,6 @@
             padding-left: 40px;
         }
 
-        /* Aktivni stih (onaj koji se trenutno čita) */
         .sub-verse-item.current-verse {
             color: #f1c40f;
             background-color: #2c3e50;
@@ -174,7 +201,6 @@
             border-left: 3px solid #f1c40f;
         }
 
-        /* STIL REZULTATA PRETRAGE */
         .result-item {
             padding: 12px 20px;
             border-bottom: 1px solid #34495e;
@@ -200,7 +226,6 @@
             opacity: 0.8;
         }
 
-        /* HEADER ZA GRUPE FAVORITA */
         .fav-group-header {
             background: #1a252f;
             color: #95a5a6;
@@ -233,9 +258,9 @@
             margin-bottom: 30px;
             border-top: 5px solid #8e44ad;
             position: relative;
+            box-sizing: border-box; /* Sprečava da padding proširi element */
         }
 
-        /* HIGHLIGHT STIL (Žuto markiranje u tekstu) */
         .highlight {
             background-color: #f1c40f;
             color: #000;
@@ -243,7 +268,6 @@
             border-radius: 2px;
         }
 
-        /* ZVEZDICA ZA FAVORITE */
         .star-toggle {
             position: absolute;
             top: 20px;
@@ -257,7 +281,6 @@
         .star-toggle:hover { transform: scale(1.1); }
         .star-toggle.active { color: #f1c40f; }
 
-        /* DIZAJN STIHA */
         .chapter-label {
             text-align: center;
             color: #7f8c8d;
@@ -271,10 +294,10 @@
 
         .sanskrit-text {
             font-family: 'Georgia', serif;
-            font-size: 1.3em; /* Smanjeno kako si tražio */
+            font-size: 1.3em;
             color: #2c3e50;
             text-align: center;
-            white-space: pre-wrap; /* Ovo čuva nove redove */
+            white-space: pre-wrap;
             line-height: 1.6;
             margin: 0 0 20px 0;
             font-style: italic;
@@ -320,7 +343,6 @@
             font-weight: 500;
         }
 
-        /* NAVIGACIJA DUGMIĆI */
         .nav-buttons {
             display: flex;
             justify-content: space-between;
@@ -355,23 +377,63 @@
             box-shadow: none;
         }
 
-        /* Scrollbar */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #2c3e50; }
         ::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #777; }
 
-        /* Media Query za mobilne */
+        /* --- MEDIA QUERY ZA MOBILNE UREĐAJE --- */
         @media (max-width: 768px) {
-            body { flex-direction: column; }
-            #sidebar { width: 100%; height: 350px; }
-            #main-content { padding: 20px; }
-            .verse-container { padding: 20px; }
-            .sanskrit-text { font-size: 1.2em; }
+            body { 
+                display: flex; /* Zadržavamo flex za glavni prozor */
+            }
+
+            /* Prikazujemo dugme za meni */
+            #menu-toggle {
+                display: block;
+            }
+
+            /* Sidebar postaje lebdeći i pomeren van ekrana ulevo */
+            #sidebar { 
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100%;
+                width: 85%; /* Meni zauzima 85% širine na telefonu */
+                max-width: 350px;
+                z-index: 100;
+                transform: translateX(-100%); /* Sakriveno levo */
+            }
+
+            /* Klasa koja otvara sidebar */
+            #sidebar.open {
+                transform: translateX(0); /* Vraća se na ekran */
+            }
+
+            /* Glavni sadržaj se širi na ceo ekran */
+            #main-content { 
+                padding: 70px 15px 20px 15px; /* Dodat prostor gore da tekst ne ide pod dugme */
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+            .verse-container { 
+                padding: 20px; 
+            }
+            
+            .sanskrit-text { 
+                font-size: 1.15em; 
+            }
         }
     </style>
 </head>
 <body>
+
+    <!-- OVERLAY (Crna polu-providna pozadina na telefonu) -->
+    <div id="overlay" onclick="closeSidebar()"></div>
+
+    <!-- DUGME ZA OTVARANJE MENIJA NA TELEFONU -->
+    <button id="menu-toggle" onclick="openSidebar()">☰</button>
 
     <!-- SIDEBAR -->
     <div id="sidebar">
@@ -403,7 +465,6 @@
 
     <!-- LOGIKA APLIKACIJE -->
     <script>
-        // Provera podataka
         if (typeof slokas === 'undefined') {
             document.getElementById('main-content').innerHTML = 
                 `<h2 style="color:red; text-align:center; margin-top:50px;">
@@ -412,21 +473,37 @@
             throw new Error("Data error");
         }
 
-        // --- DOM ELEMENTI ---
         const listContainer = document.getElementById('list-container');
         const searchInput = document.getElementById('search-input');
         const verseDisplay = document.getElementById('verse-display');
         const navButtons = document.getElementById('nav-buttons');
         const prevBtn = document.getElementById('prev-btn');
         const nextBtn = document.getElementById('next-btn');
+        
+        // Novi elementi za meni
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
 
         let currentSearchQuery = "";
         let currentIndex = -1;
         let isFavoritesView = false;
         let activeChapterName = null;
 
-        let favorites = JSON.parse(localStorage.getItem('sb_favorites')) || [];
+        let favorites = JSON.parse(localStorage.getItem('sb_favorites')) ||[];
         const chapters = [...new Set(slokas.map(s => s.chapter))];
+
+        // --- FUNKCIJE ZA OTVARANJE/ZATVARANJE MENIJA ---
+        function openSidebar() {
+            sidebar.classList.add('open');
+            overlay.style.display = 'block';
+            setTimeout(() => { overlay.style.opacity = '1'; }, 10);
+        }
+
+        function closeSidebar() {
+            sidebar.classList.remove('open');
+            overlay.style.opacity = '0';
+            setTimeout(() => { overlay.style.display = 'none'; }, 300);
+        }
 
         // --- POMOĆNE FUNKCIJE ---
         function cleanText(text) {
@@ -443,45 +520,31 @@
             return firstLine;
         }
 
-        // ** SUPER-PAMETNI REGEX **
-        // Ova funkcija pravi pravilo: "Nađi reč X, ali samo ako ispred nje NIJE slovo"
         function createStrictRegex(query) {
-            // Mapa za pametnu pretragu (a nalazi ā, s nalazi ś...)
             const charMap = {
                 'a': '[aā]', 'i': '[iī]', 'u': '[uū]', 'r': '[rṛṝ]',
                 'l': '[lḷ]', 'm': '[mṁ]', 'n': '[nṇṅñ]', 't': '[tṭ]',
                 'd': '[dḍ]', 's': '[sśṣ]', 'h': '[hḥ]'
             };
 
-            // 1. Pretvori upit u "pametni" upit (sa dijakriticima)
             const escapedQuery = query.split('').map(char => {
                 const lower = char.toLowerCase();
-                // Escape specijalnih znakova regexa
                 if (/[.*+?^${}()|[\]\\]/.test(char)) return "\\" + char;
                 return charMap[lower] ? charMap[lower] : char;
             }).join('');
 
-            // 2. Definišemo šta su sve "slova" u Sanskritu i Engleskom
-            // Ovo sprečava da se 'atma' nađe unutar 'paramatma'
             const allLetters = "a-zA-Zāīūṛṝḷṃṁṇṅñṭḍśṣḥ";
-
-            // (?<![slova]) -> Znači: "Ako ispred onoga što tražimo STOJI slovo, IGNORIŠI GA"
-            // To sprečava 'danger' za 'anger', ali dozvoljava 'angered'
             return new RegExp(`(?<![${allLetters}])(${escapedQuery})`, 'gi');
         }
 
-        // --- FUNKCIJA ZA HIGHLIGHT ---
         function highlightText(text, preserveLines = false) {
             if (!text) return "";
-            
             let content = text;
 
-            // 1. Ako je prevod, spoji u prozu
             if (!preserveLines) {
                 content = content.replace(/\n/g, " ").replace(/\r/g, "");
             }
 
-            // 2. Markiranje
             if (currentSearchQuery && currentSearchQuery.trim().length >= 2) {
                 try {
                     const query = currentSearchQuery.trim();
@@ -490,15 +553,12 @@
                 } catch (e) { console.log(e); }
             }
 
-            // 3. Ako je sanskrit, pretvori preostale \n u <br>
             if (preserveLines) {
                 content = content.replace(/\n/g, "<br>");
             }
-
             return content;
         }
 
-        // --- LOGIKA ZA FAVORITE ---
         function toggleFavorite(index) {
             const pos = favorites.indexOf(index);
             if (pos === -1) {
@@ -586,8 +646,6 @@
             } catch (e) { return; }
 
             const matches = slokas.filter(v => {
-                // search() vraća poziciju matcha ili -1. 
-                // Pošto koristimo strogi regex, ovo će sada poštovati početak reči.
                 return v.sanskrit.search(regex) !== -1 || 
                        v.translation.search(regex) !== -1 ||
                        v.synonyms.search(regex) !== -1;
@@ -665,7 +723,6 @@
                     <div id="star-icon" class="star-toggle" onclick="toggleFavorite(${index})">☆</div>
                     <div class="chapter-label">${verse.chapter}</div>
                     
-                    <!-- Ovde menjamo stil inline da smanjimo font za strofe -->
                     <div class="sanskrit-text" style="font-size: 1.25em;">${sanskrit}</div>
                     
                     <div class="ref-text">${verse.ref}</div>
@@ -681,6 +738,11 @@
             nextBtn.disabled = index === slokas.length - 1;
             
             window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            // AUTOMATSKO ZATVARANJE MENIJA NA TELEFONU NAKON ODABIRA STIHA
+            if (window.innerWidth <= 768) {
+                closeSidebar();
+            }
         }
 
         // --- EVENT LISTENERS ---
